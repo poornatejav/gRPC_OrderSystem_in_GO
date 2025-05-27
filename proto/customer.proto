@@ -1,0 +1,38 @@
+//syntax = "proto3";
+//package customer;
+//option go_package = "proto/customerpb";
+//
+//service CustomerService {
+//  rpc GetCustomer(GetCustomerRequest) returns (GetCustomerResponse);
+//}
+//
+//message GetCustomerRequest {
+//  string id = 1;
+//}
+//
+//message GetCustomerResponse {
+//  bool exists = 1;
+//}
+syntax = "proto3";
+
+package customer;
+option go_package = "proto/customerpb";
+
+import "google/api/annotations.proto";
+
+service CustomerService {
+  rpc GetCustomer(GetCustomerRequest) returns (GetCustomerResponse) {
+    option (google.api.http) = {
+      post: "/v1/customer/get"
+      body: "*"
+    };
+  }
+}
+
+message GetCustomerRequest {
+  string id = 1;
+}
+
+message GetCustomerResponse {
+  bool exists = 1;
+}

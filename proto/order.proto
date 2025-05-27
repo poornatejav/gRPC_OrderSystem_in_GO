@@ -1,0 +1,43 @@
+//syntax = "proto3";
+//package order;
+//option go_package = "proto/orderpb";
+//
+//
+//service OrderService {
+//  rpc PlaceOrder(OrderRequest) returns (OrderResponse);
+//}
+//
+//message OrderRequest {
+//  string customer_id = 1;
+//  string item_id = 2;
+//  int32 quantity = 3;
+//}
+//
+//message OrderResponse {
+//  string status = 1;
+//}
+syntax = "proto3";
+
+package order;
+option go_package = "proto/orderpb";
+
+import "google/api/annotations.proto";
+
+service OrderService {
+  rpc PlaceOrder(OrderRequest) returns (OrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/order/place"
+      body: "*"
+    };
+  }
+}
+
+message OrderRequest {
+  string customer_id = 1;
+  string item_id = 2;
+  int32 quantity = 3;
+}
+
+message OrderResponse {
+  string status = 1;
+}

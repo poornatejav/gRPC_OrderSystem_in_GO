@@ -1,0 +1,15 @@
+proto/**/customerpb
+proto/**/inventorypb
+proto/**/orderpb
+/proto/googleapis/
+
+proto/**/*.pb.go
+proto/**/*.pb.gw.go
+
+third_party/
+
+web/
+
+regen_grpc.sh
+
+.idea/
