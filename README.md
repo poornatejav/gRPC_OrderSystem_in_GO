@@ -6,7 +6,7 @@ This repository contains a sample gRPC-based Order Management System written in 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/poornatejav/tf-provider-jsonendpoint.git
+git clone https://github.com/poornatejav/gRPC_OrderSystem_in_GO.git
 cd  gRPC_OrderSystem_in_GO
 ```
 
