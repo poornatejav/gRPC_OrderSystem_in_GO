@@ -68,7 +68,7 @@
 //}
 //-------------------------------------------
 
-    syntax = "proto3";
+syntax = "proto3";
 
 package inventory;
 option go_package = "proto/inventorypb";
