@@ -13,7 +13,34 @@
 //message GetCustomerResponse {
 //  bool exists = 1;
 //}
-syntax = "proto3";
+// -------------------------------------------
+
+//syntax = "proto3";
+//
+//package customer;
+//option go_package = "proto/customerpb";
+//
+//import "google/api/annotations.proto";
+//
+//service CustomerService {
+//  rpc GetCustomer(GetCustomerRequest) returns (GetCustomerResponse) {
+//    option (google.api.http) = {
+//      post: "/v1/customer/get"
+//      body: "*"
+//    };
+//  }
+//}
+//
+//message GetCustomerRequest {
+//  string id = 1;
+//}
+//
+//message GetCustomerResponse {
+//  bool exists = 1;
+//}
+//-------------------------------------------
+
+    syntax = "proto3";
 
 package customer;
 option go_package = "proto/customerpb";
@@ -27,6 +54,25 @@ service CustomerService {
       body: "*"
     };
   }
+
+  rpc ListCustomers(ListCustomersRequest) returns (ListCustomersResponse) {
+    option (google.api.http) = {
+      get: "/v1/customer/list"
+    };
+  }
+
+  rpc UpdateCustomer(UpdateCustomerRequest) returns (UpdateCustomerResponse) {
+    option (google.api.http) = {
+      put: "/v1/customer/update"
+      body: "*"
+    };
+  }
+}
+
+message Customer {
+  string id = 1;
+  string name = 2;
+  string email = 3;
 }
 
 message GetCustomerRequest {
@@ -35,4 +81,19 @@ message GetCustomerRequest {
 
 message GetCustomerResponse {
   bool exists = 1;
+  Customer customer = 2;
+}
+
+message ListCustomersRequest {}
+
+message ListCustomersResponse {
+  repeated Customer customers = 1;
+}
+
+message UpdateCustomerRequest {
+  Customer customer = 1;
+}
+
+message UpdateCustomerResponse {
+  bool success = 1;
 }

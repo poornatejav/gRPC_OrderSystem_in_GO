@@ -77,6 +77,80 @@
 //	}
 //
 // ----------------------------------------------
+//package main
+//
+//import (
+//	"bufio"
+//	"context"
+//	"fmt"
+//	"log"
+//	"net"
+//	"os"
+//	"strings"
+//	"sync"
+//
+//	"google.golang.org/grpc"
+//	"grpc-order-system/proto/customerpb"
+//)
+//
+//type CustomerServer struct {
+//	customerpb.UnimplementedCustomerServiceServer
+//	customers map[string]bool
+//	mu        sync.RWMutex
+//}
+//
+//func (s *CustomerServer) GetCustomer(ctx context.Context, req *customerpb.GetCustomerRequest) (*customerpb.GetCustomerResponse, error) {
+//	id := strings.TrimSpace(req.Id)
+//	s.mu.RLock()
+//	_, exists := s.customers[id]
+//	s.mu.RUnlock()
+//	return &customerpb.GetCustomerResponse{Exists: exists}, nil
+//}
+//
+//func main() {
+//	server := &CustomerServer{
+//		customers: make(map[string]bool),
+//	}
+//
+//	lis, err := net.Listen("tcp", ":50051")
+//	if err != nil {
+//		log.Fatalf("Failed to listen: %v", err)
+//	}
+//
+//	grpcServer := grpc.NewServer()
+//	customerpb.RegisterCustomerServiceServer(grpcServer, server)
+//
+//	// Input goroutine
+//	go func() {
+//		scanner := bufio.NewScanner(os.Stdin)
+//		fmt.Println("Enter customer IDs (one per line). Enter empty line to finish or continue adding:")
+//
+//		for {
+//			fmt.Print("Customer ID: ")
+//			if !scanner.Scan() {
+//				fmt.Println("\nInput closed.")
+//				return
+//			}
+//			line := strings.TrimSpace(scanner.Text())
+//			if line == "" {
+//				fmt.Println("Empty input detected, you can continue or Ctrl+C to quit.")
+//				continue
+//			}
+//
+//			server.mu.Lock()
+//			server.customers[line] = true
+//			server.mu.Unlock()
+//			fmt.Printf("Added customer: %s\n", line)
+//		}
+//	}()
+//
+//	log.Println("Customer Service running on :50051")
+//	if err := grpcServer.Serve(lis); err != nil {
+//		log.Fatalf("Failed to serve: %v", err)
+//	}
+//}
+//-----------------------------------------------------------------------
+
 package main
 
 import (
@@ -87,65 +161,56 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync"
+	"time"
 
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"grpc-order-system/proto/customerpb"
 )
 
-type CustomerServer struct {
-	customerpb.UnimplementedCustomerServiceServer
-	customers map[string]bool
-	mu        sync.RWMutex
-}
-
-func (s *CustomerServer) GetCustomer(ctx context.Context, req *customerpb.GetCustomerRequest) (*customerpb.GetCustomerResponse, error) {
-	id := strings.TrimSpace(req.Id)
-	s.mu.RLock()
-	_, exists := s.customers[id]
-	s.mu.RUnlock()
-	return &customerpb.GetCustomerResponse{Exists: exists}, nil
-}
-
 func main() {
-	server := &CustomerServer{
-		customers: make(map[string]bool),
-	}
-
-	lis, err := net.Listen("tcp", ":50051")
+	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		log.Fatal(err)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := client.Connect(ctx); err != nil {
+		log.Fatal(err)
+	}
+	collection := client.Database("orderdb").Collection("customers")
+	model := &CustomerModel{Collection: collection}
 
-	grpcServer := grpc.NewServer()
-	customerpb.RegisterCustomerServiceServer(grpcServer, server)
-
-	// Input goroutine
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Println("Enter customer IDs (one per line). Enter empty line to finish or continue adding:")
-
+		fmt.Println("Enter customer IDs (one per line):")
 		for {
 			fmt.Print("Customer ID: ")
 			if !scanner.Scan() {
-				fmt.Println("\nInput closed.")
 				return
 			}
-			line := strings.TrimSpace(scanner.Text())
-			if line == "" {
-				fmt.Println("Empty input detected, you can continue or Ctrl+C to quit.")
-				continue
+			id := strings.TrimSpace(scanner.Text())
+			if id != "" {
+				err := model.Insert(context.Background(), id)
+				if err != nil {
+					log.Printf("Insert failed: %v\n", err)
+				} else {
+					fmt.Printf("Added customer: %s\n", id)
+				}
 			}
-
-			server.mu.Lock()
-			server.customers[line] = true
-			server.mu.Unlock()
-			fmt.Printf("Added customer: %s\n", line)
 		}
 	}()
 
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	customerpb.RegisterCustomerServiceServer(s, &CustomerService{Model: model})
+
 	log.Println("Customer Service running on :50051")
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+	if err := s.Serve(lis); err != nil {
+		log.Fatal(err)
 	}
 }
