@@ -40,7 +40,7 @@
 //}
 //-------------------------------------------
 
-    syntax = "proto3";
+syntax = "proto3";
 
 package customer;
 option go_package = "proto/customerpb";
